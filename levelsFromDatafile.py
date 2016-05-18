@@ -5,6 +5,7 @@ Created on Mon May 16 17:25:10 2016
 @author: jaymz_ubuntu
 """
 
+import sys
 import numpy as np
 import matplotlib.pyplot as plt
 from fractions import Fraction
@@ -16,6 +17,24 @@ dataFileSeparator = ','
 
 showElectricDipole =        False
 showElectricQuadrupole =    False
+
+for i in range(0,len(sys.argv)):
+    if((sys.argv[i] == '-i' or sys.argv[i]=='--input') and len(sys.argv)>i+1):
+        dataFile=sys.argv[i+1]
+    elif((sys.argv[i] == '-d' or sys.argv[i]=='--dipole')):
+        showElectricDipole = True
+    elif((sys.argv[i] == '-q' or sys.argv[i]=='--quadrupole')):
+        showElectricQuadrupole = True
+    elif((sys.argv[i] == '-s' or sys.argv[i]=='--seperator') and len(sys.argv)>i+1):
+        dataFileSeparator=sys.argv[i+1]
+    elif((sys.argv[i] == '-h' or sys.argv[i]=='--help')):
+        print('----------------------------------\nGroutrian diagram generator. Takes input from list of energy levels and outputs an energy level diagram.\n\nCommand line options:\nArgument\t\t\tParameter\t\tInfo\n\
+        -i,--input\t\t[file]\t\tInput file.\n\
+        -d,--dipole\t\t\t\tShow dipole transitions\n\
+        -q,--quadrupole\t\t\t\tShow quadrupole transitions\n\
+        -h,--help\t\t\t\tShow this help\n\n----------------------------------\n')
+        sys.exit()
+        
 
 title = 'Energy Level Diagram for ' + dataFile
 scale = 'cm$^{-1}$'
