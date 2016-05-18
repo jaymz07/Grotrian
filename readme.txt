@@ -1,5 +1,16 @@
 Groutrian diagram generator. Plots energy level scheme from a given data file.
 
+-------------------------
+Command line options:
+-------------------------
+Argument                        Parameter               Info
+        -i,--input              [file]          Input file.
+        -d,--dipole                             Show dipole transitions
+        -q,--quadrupole                         Show quadrupole transitions
+        -s,--separator          [Delimiter]     Specify custom delimiter character. (Default is ',')
+        -h,--help                               Show this help
+
+
 ------------
 Data File format
 ------------

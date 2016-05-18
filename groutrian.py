@@ -32,6 +32,7 @@ for i in range(0,len(sys.argv)):
         -i,--input\t\t[file]\t\tInput file.\n\
         -d,--dipole\t\t\t\tShow dipole transitions\n\
         -q,--quadrupole\t\t\t\tShow quadrupole transitions\n\
+        -s,--separator\t\t[Delimiter]\tSpecify custom delimiter character. (Default is \',\')\n\
         -h,--help\t\t\t\tShow this help\n\n----------------------------------\n')
         sys.exit()
         
