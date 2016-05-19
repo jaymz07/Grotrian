@@ -12,6 +12,7 @@ from fractions import Fraction
 
 levelWidth = 0.2
 
+
 dataFile = 'data_files/Mg-II.levels'
 dataFileSeparator = ','
 
@@ -41,7 +42,8 @@ title = 'Energy Level Diagram for ' + dataFile
 scale = 'cm$^{-1}$'
 
 file = open(dataFile,'r')
-minY, maxY = 0, 0
+minY, maxY, minX, maxX = 0, 0, 0, 0
+maxl = 0
 yMargin = 0.1
 
 levels = []
@@ -84,6 +86,7 @@ for line in file:
         minY = min(v,minY)
         maxY = max(v,maxY)
 file.close()
+multiplicities=[]
 
 for i in range(0,len(levels)):
     st = levels[i]['label']
@@ -111,15 +114,32 @@ for i in range(0,len(levels)):
         xstart = 3
     elif(levels[i]['l'] == 3):
         xstart = 4
+    maxl=max(maxl,levels[i]['l'])
+    
+    levels[i]['s']=(levels[i]['mult']-1)/2
+        
     levels[i]['xstart']=xstart
+    minX=min(xstart,minX)
+    maxX=max(xstart,maxX)
+    
+    if(levels[i]['mult'] not in multiplicities):
+        multiplicities.append(levels[i]['mult'])
 
+multiplicities.sort()
+rangeX = maxX-minX
+for l in levels:
+    l['xstart']+=(rangeX + 1)*multiplicities.index(l['mult'])
+    maxX=max(maxX,l['xstart'])
+    
+    
 if(showElectricDipole):
     for i in range(0,len(levels)):
         for j in range(i+1,len(levels)):
             delta_j = abs(levels[i]['j']-levels[j]['j'])
-            if(delta_j == Fraction(1,1) or delta_j == Fraction(0,1)):
+            if(delta_j == Fraction(1,1)):
                 if(abs(levels[i]['l']-levels[j]['l'])==1):
-                    transitions.append({'i' : i, 'f' : j})
+                    if(levels[i]['s']==levels[j]['s']):
+                        transitions.append({'i' : i, 'f' : j})
                     
 if(showElectricQuadrupole):
     for i in range(0,len(levels)):
@@ -153,14 +173,18 @@ for t in transitions:
     dr = np.sqrt(dx**2+dy**2)
     headLength, headWidth = 0.0, 0.00
     tColor = 'red'
+    aColor = 'blue'
     if(t.has_key('color')):
-        tColor=t['color']
-    plt.arrow(x,y,dx-dx/dr*headLength,dy-dy/dr*headLength,head_width=headWidth,head_length=headLength,color=tColor.rstrip())
-    plt.annotate(t['label'],xy=(x+dx/2,y+dy/2),color=tColor.rstrip())
+        tColor=t['color'].rstrip()
+        aColor = tColor
+    plt.arrow(x,y,dx-dx/dr*headLength,dy-dy/dr*headLength,head_width=headWidth,head_length=headLength,color=tColor)
+    plt.annotate(t['label'],xy=(x+dx/2,y+dy/2),color=aColor)
 yRange = maxY-minY
 plt.ylim(minY-yMargin*yRange,maxY+yMargin*yRange)
 plt.ylabel(scale)
 plt.title(title)
 plt.xlim(0,5)
-plt.xticks([1,2,3,4],['S','P','D','F'])
+plt.xticks(range(1,6*len(multiplicities)),['S','P','D','F','']*len(multiplicities))
+for i in range(0,len(multiplicities)-1):
+    plt.plot([5*(i+1),5*(i+1)],[minY-yMargin*yRange,maxY+yMargin*yRange],'-0')
 plt.show()
