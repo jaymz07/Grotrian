@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from fractions import Fraction
 
 levelWidth = 0.2
-
+labelSpacing=.45
 
 dataFile = 'data_files/Mg-II.levels'
 dataFileSeparator = ','
@@ -40,6 +40,7 @@ for i in range(0,len(sys.argv)):
 
 title = 'Energy Level Diagram for ' + dataFile
 scale = 'cm$^{-1}$'
+termSymbols = ['S','P','D','F','G','H','I','J','K','L','M','N','O','P','Q','R']
 
 file = open(dataFile,'r')
 minY, maxY, minX, maxX = 0, 0, 0, 0
@@ -147,7 +148,8 @@ if(showElectricQuadrupole):
             delta_j = abs(levels[i]['j']-levels[j]['j'])
             if(delta_j == Fraction(2,1) or delta_j == Fraction(0,1)):
                 if(abs(levels[i]['l']-levels[j]['l'])==2):
-                    transitions.append({'i' : i, 'f' : j})
+                    if(abs(levels[i]['s']-levels[j]['s'])==1.0):
+                        transitions.append({'i' : i, 'f' : j})
 
 def nmString(transition):
     return str(int(1239.8393589807376/abs(levels[trans['i']]['energy'] - levels[trans['f']]['energy']))) + 'nm'
@@ -164,7 +166,7 @@ for trans in transitions:
 for level in levels:
     plt.plot([level['xstart']-levelWidth,level['xstart']+levelWidth],[level['energy'],level['energy']],'-0')
 for level in levels:
-    plt.annotate('$'+level['label'].split('_')[0]+ '_{'+ str(level['j']) + '}$',xy=(level['xstart']+levelWidth,level['energy']))
+    plt.annotate('$'+level['label'].split('_')[0]+ '_{'+ str(level['j']) + '}$',xy=(level['xstart']-levelWidth-labelSpacing,level['energy']))
 for t in transitions:
     x=levels[t['i']]['xstart']
     y=levels[t['i']]['energy']
@@ -184,7 +186,7 @@ plt.ylim(minY-yMargin*yRange,maxY+yMargin*yRange)
 plt.ylabel(scale)
 plt.title(title)
 plt.xlim(0,5)
-plt.xticks(range(1,6*len(multiplicities)),['S','P','D','F','']*len(multiplicities))
+plt.xticks(range(1,6*len(multiplicities)),(termSymbols[0:maxl+1]+[''])*len(multiplicities))
 for i in range(0,len(multiplicities)-1):
     plt.plot([5*(i+1),5*(i+1)],[minY-yMargin*yRange,maxY+yMargin*yRange],'-0')
 plt.show()
