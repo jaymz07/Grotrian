@@ -6,12 +6,13 @@ Created on Mon May 16 17:25:10 2016
 """
 
 import sys
+import copy
 import numpy as np
 import matplotlib.pyplot as plt
 from fractions import Fraction
 
-levelWidth = 0.2
-labelSpacing=.45
+levelWidth = 0.3
+labelSpacing=0.1
 
 dataFile = 'data_files/Mg-II.levels'
 dataFileSeparator = ','
@@ -19,7 +20,9 @@ dataFileSeparator = ','
 showElectricDipole =        False
 showElectricQuadrupole =    False
 
-showSplittings = True
+showSplittings =        True
+exaggerateSplittings =  True
+splitMargin = .04
 
 for i in range(0,len(sys.argv)):
     if((sys.argv[i] == '-i' or sys.argv[i]=='--input') and len(sys.argv)>i+1):
@@ -143,12 +146,27 @@ for i in range(0,len(levels)):
         levels[i]['xstart']=1
         print("Invalid level label encountered. Will not parse state properties")
 
-##Remove level splittings containing only one level
+##Remove level splittings containing only one level and sort remaining levels
 count = 0
 while(count < len(splittings)):
     if(len(splittings[count]['levels']) <= 1):
         del splittings[count]
     else:
+        minE = splittings[count]['levels'][0]['energy']
+        maxE = minE
+        avgE = 0
+        for i in range(0,len(splittings[count]['levels'])):
+            eI = splittings[count]['levels'][i]['energy']
+            avgE += eI
+            minE=min(minE,eI)
+            maxE=max(maxE,eI)
+            for j in range(i+1,len(splittings[count]['levels'])):
+                if(eI > splittings[count]['levels'][j]['energy']):
+                    temp = copy.deepcopy(splittings[count]['levels'][i])
+                    splittings[count]['levels'][i] = splittings[count]['levels'][j]
+                    splittings[count]['levels'][j] = temp
+        splittings[count]['width']=maxE-minE
+        splittings[count]['avgEn']=avgE/len(splittings[count]['levels'])
         count = count+1
         
 if(labelError):
@@ -195,21 +213,69 @@ for trans in transitions:
     elif(trans.has_key('show-nm') and trans['show-nm']):
         trans['label']=trans['label'] + ' (' + nmString(trans) +')'
 
+yRange = maxY-minY
+
+def indexSplit(lvl):
+    splitIndex = -1
+    jInd = -1
+    lbl = lvl['label']
+    for i in range(0,len(splittings)):
+        if(splittings[i]['label'] == lbl.split('_')[0]):
+            splitIndex = i
+            break
+    for i in range(0,len(splittings[splitIndex]['levels'])):
+        if(splittings[splitIndex]['levels'][i]['j']==lvl['j']):
+            jInd = i
+            break
+    return [splitIndex, jInd]
+    
 ##Plot level lines
 for level in levels:
-    plt.plot([level['xstart']-levelWidth,level['xstart']+levelWidth],[level['energy'],level['energy']],'-0')
+    lbl = level['label']
+    splitIndex = indexSplit(level)[0]
     aPos = (level['xstart']-levelWidth-labelSpacing,level['energy'])
-    if(not labelError):
-        plt.annotate('$'+level['label'].split('_')[0]+ '_{'+ str(level['j']) + '}$',xy=aPos)
+    if(labelError or splitIndex==-1 or not showSplittings):
+        plt.plot([level['xstart']-levelWidth,level['xstart']+levelWidth],[level['energy'],level['energy']],'-0')
+        if(not labelError):
+            plt.annotate('$'+lbl.split('_')[0]+ '_{'+ str(level['j']) + '}$',xy=aPos)
+        else:
+            plt.annotate(lbl,xy=aPos)
     else:
-        plt.annotate(level['label'],xy=aPos)
+        split = splittings[splitIndex]
+        avgEn = split['avgEn']
+        plt.plot([level['xstart']-levelWidth,level['xstart']-levelWidth/2],[avgEn]*2,'-0')
+        exScale = 1
+        if(exaggerateSplittings):
+            exScale = yRange*splitMargin/split['width']
+        for i in range(0,len(split['levels'])):
+            exEn = (split['levels'][i]['energy'] - avgEn)*exScale + avgEn
+            plt.plot([level['xstart']-levelWidth/2,level['xstart']],[avgEn,exEn],'--',color='black')
+            plt.plot([level['xstart'],level['xstart']+levelWidth],[exEn]*2,'-0')
+            sPos= (level['xstart'],exEn)
+            plt.annotate('$j='+ str(split['levels'][i]['j']) +'$',xy=sPos)
+        plt.annotate('$'+lbl.split('_')[0]+'$',xy=(aPos[0],avgEn))
 
 ##Draw Transition arrows    
 for t in transitions:
+    indI = indexSplit(levels[t['i']])
+    indF = indexSplit(levels[t['f']])
     x=levels[t['i']]['xstart']
     y=levels[t['i']]['energy']
-    dx = levels[t['f']]['xstart']-levels[t['i']]['xstart']
-    dy = levels[t['f']]['energy']-levels[t['i']]['energy']
+    if(exaggerateSplittings and indI[0] > -1):
+        exScale = 1
+        if(exaggerateSplittings):
+            exScale = yRange*splitMargin/splittings[indI[0]]['width']
+        x += levelWidth/2
+        y = (splittings[indI[0]]['levels'][indI[1]]['energy'] - splittings[indI[0]]['avgEn'])*exScale + splittings[indI[0]]['avgEn']
+        
+    dx = levels[t['f']]['xstart']-x
+    dy = levels[t['f']]['energy']-y
+    if(exaggerateSplittings and indF[0] > -1):
+        exScale = 1
+        if(exaggerateSplittings):
+            exScale = yRange*splitMargin/splittings[indF[0]]['width']
+        dx += levelWidth/2
+        dy = (splittings[indF[0]]['levels'][indF[1]]['energy'] - splittings[indF[0]]['avgEn'])*exScale + splittings[indF[0]]['avgEn'] - y
     dr = np.sqrt(dx**2+dy**2)
     headLength, headWidth = 0.0, 0.00
     tColor = 'red'
@@ -219,7 +285,6 @@ for t in transitions:
         aColor = tColor
     plt.arrow(x,y,dx-dx/dr*headLength,dy-dy/dr*headLength,head_width=headWidth,head_length=headLength,color=tColor)
     plt.annotate(t['label'],xy=(x+dx/2,y+dy/2),color=aColor)
-yRange = maxY-minY
 plt.ylim(minY-yMargin*yRange,maxY+yMargin*yRange)
 plt.ylabel(scale)
 plt.title(title)
