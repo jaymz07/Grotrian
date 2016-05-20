@@ -1,4 +1,4 @@
-Groutrian diagram generator. Plots energy level scheme from a given data file.
+Grotrian diagram generator. Plots energy level scheme from a given data file.
 
 -------------------------
 Command line options:
