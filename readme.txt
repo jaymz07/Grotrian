@@ -3,10 +3,13 @@ Grotrian diagram generator. Plots energy level scheme from a given data file.
 -------------------------
 Command line options:
 -------------------------
-Argument                        Parameter               Info
+	Argument                Parameter       Info
+
         -i,--input              [file]          Input file.
         -d,--dipole                             Show dipole transitions
         -q,--quadrupole                         Show quadrupole transitions
+        -l,--no-splitting                       Disable level splitting
+        -e,--no-exaggerate                      Disable level splitting exaggeration
         -s,--separator          [Delimiter]     Specify custom delimiter character. (Default is ',')
         -h,--help                               Show this help
 
@@ -37,7 +40,12 @@ The data file can also contain options on how to format the graph.
 	Format parameters:
 	
 	$TITLE=Example Graph Title
+		Sets Graph title to "Example Graph Title"
 	$SCALE=Y Axis Unit
+		Sets the label on the y-axis to "Y Axis Unit"
+	$SPLITSCALE=0.02
+		Sets the level splitting exaggeration to 2% of the y-range
+		
 
 ---------
 Specifying Transitions

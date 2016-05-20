@@ -31,6 +31,10 @@ for i in range(0,len(sys.argv)):
         showElectricDipole = True
     elif((sys.argv[i] == '-q' or sys.argv[i]=='--quadrupole')):
         showElectricQuadrupole = True
+    elif((sys.argv[i] == '-l' or sys.argv[i]=='--no-splitting')):
+        showSplittings = False
+    elif((sys.argv[i] == '-e' or sys.argv[i]=='--no-exaggerate')):
+        exaggerateSplittings = False
     elif((sys.argv[i] == '-s' or sys.argv[i]=='--seperator') and len(sys.argv)>i+1):
         dataFileSeparator=sys.argv[i+1]
     elif((sys.argv[i] == '-h' or sys.argv[i]=='--help')):
@@ -38,6 +42,8 @@ for i in range(0,len(sys.argv)):
         -i,--input\t\t[file]\t\tInput file.\n\
         -d,--dipole\t\t\t\tShow dipole transitions\n\
         -q,--quadrupole\t\t\t\tShow quadrupole transitions\n\
+        -l,--no-splitting\t\t\tDisable level splitting\n\
+        -e,--no-exaggerate\t\t\tDisable level splitting exaggeration\n\
         -s,--separator\t\t[Delimiter]\tSpecify custom delimiter character. (Default is \',\')\n\
         -h,--help\t\t\t\tShow this help\n\n----------------------------------\n')
         sys.exit()
@@ -247,7 +253,7 @@ for level in levels:
         avgEn = split['avgEn']
         plt.plot([level['xstart']-levelWidth,level['xstart']-levelWidth/2],[avgEn]*2,'-0')
         exScale = 1
-        if(exaggerateSplittings):
+        if(exaggerateSplittings and showSplittings):
             exScale = yRange*splitMargin/split['width']
         for i in range(0,len(split['levels'])):
             exEn = (split['levels'][i]['energy'] - avgEn)*exScale + avgEn
@@ -263,7 +269,7 @@ for t in transitions:
     indF = indexSplit(levels[t['f']])
     x=levels[t['i']]['xstart']
     y=levels[t['i']]['energy']
-    if(exaggerateSplittings and indI[0] > -1):
+    if(exaggerateSplittings and indI[0] > -1 and showSplittings):
         exScale = 1
         if(exaggerateSplittings):
             exScale = yRange*splitMargin/splittings[indI[0]]['width']
@@ -272,7 +278,7 @@ for t in transitions:
         
     dx = levels[t['f']]['xstart']-x
     dy = levels[t['f']]['energy']-y
-    if(exaggerateSplittings and indF[0] > -1):
+    if(exaggerateSplittings and indF[0] > -1 and showSplittings):
         exScale = 1
         if(exaggerateSplittings):
             exScale = yRange*splitMargin/splittings[indF[0]]['width']
