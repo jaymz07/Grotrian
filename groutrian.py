@@ -86,6 +86,8 @@ for line in file:
                 title = vals[1]
             elif(vals[0] == '$SCALE'):
                 scale = vals[1]
+            elif(vals[0] == '$SPLITSCALE'):
+                splitMargin = float(vals[1])
             else:
                 print('Invalid Command encountered data file' + dataFile)
                 print('---->' + line)
