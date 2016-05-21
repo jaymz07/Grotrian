@@ -14,7 +14,8 @@ from fractions import Fraction
 levelWidth = 0.3
 labelSpacing=0.1
 
-dataFile = 'data_files/Mg-II.levels'
+#dataFile = 'data_files/Mg-II.levels'
+dataFile= 'data_files/mg-diagrams/2.levels'
 dataFileSeparator = ','
 
 showElectricDipole =        False
@@ -63,25 +64,51 @@ levels = []
 transitions = []
 splittings = []
 
+def parseTransitionParameter(param):
+    command=param.split('=')
+    if(command[0]=='$LABEL'):
+        transitions[-1]['label']=command[1]
+    elif(command[0]=='$COLOR'):
+        transitions[-1]['color']=command[1]
+    elif(command[0]=='$SHOW-NM'):
+        if(command[1].rstrip()=='1' or command[1].rstrip().lower()=='t'):
+            transitions[-1]['show-nm']=True
+        else:
+            transitions[-1]['show-nm']=False
+    
+def isDipoleTrans(i,j):
+    if(i==j): return False
+    delta_j = abs(levels[i]['j']-levels[j]['j'])
+    if(delta_j == Fraction(1,1)):
+        if(abs(levels[i]['l']-levels[j]['l'])==1):
+            if(levels[i]['s']==levels[j]['s']):
+                return True
+    return False
+def isQuadrupoleTrans(i,j):
+    if(i==j): return False
+    delta_j = abs(levels[i]['j']-levels[j]['j'])
+    delta_l = abs(levels[i]['l']-levels[j]['l'])
+    delta_s = abs(levels[i]['s']-levels[j]['s'])
+    if(delta_j in {0,1,2}):
+        if(delta_l in {0,2}):
+            if(delta_s==0.0):
+                return True
+    return False
+
+formatCommands = []
+
 ##Read data file
 for line in file:
     if(len(line)==0):
         continue
     if(len(line)>=11 and line[0:11] == '$TRANSITION'):
-        ln = line.split(dataFileSeparator)
-        transitions.append({'i': int(ln[1]), 'f': int(ln[2])})
-        if(len(ln)>3):
-            for part in ln:
-                command=part.split('=')
-                if(command[0]=='$LABEL'):
-                    transitions[-1]['label']=command[1]
-                elif(command[0]=='$COLOR'):
-                    transitions[-1]['color']=command[1]
-                elif(command[0]=='$SHOW-NM'):
-                    if(command[1].rstrip()=='1' or command[1].rstrip().lower()=='t'):
-                        transitions[-1]['show-nm']=True
-                    else:
-                        transitions[-1]['show-nm']=False
+        formatCommands.append(line)
+    if(len(line)>=7 and line[0:7] == '$DIPOLE'):
+        formatCommands.append(line)
+    if(len(line)>=11 and line[0:11] == '$QUADRUPOLE'):
+        formatCommands.append(line)
+        
+        
     elif(line[0] == '$'):
         ln = line.split(dataFileSeparator)
         for command in ln:  
@@ -177,6 +204,38 @@ while(count < len(splittings)):
         splittings[count]['avgEn']=avgE/len(splittings[count]['levels'])
         count = count+1
         
+def transitionIndex(i,j):
+    for k in range(0,len(transitions)):
+        if((transitions[k]['i'] == i and transitions[k]['f']==j) or (transitions[k]['i'] == j and transitions[k]['f']==i)):
+            return k
+    return -1
+
+for line in formatCommands:
+    if(len(line)>=11 and line[0:11] == '$TRANSITION'):
+        ln = line.split(dataFileSeparator)
+        transitions.append({'i': int(ln[1]), 'f': int(ln[2])})
+        if(len(ln)>3):
+            for part in ln:
+                parseTransitionParameter(part)
+    if(len(line)>=7 and line[0:7] == '$DIPOLE'):
+        ln = line.split(dataFileSeparator)
+        startInd = int(ln[1])
+        for i in range(0,len(levels)):
+            if(isDipoleTrans(startInd,i) and transitionIndex(startInd,i) == -1):
+                transitions.append({'i' : startInd, 'f' : i})
+                if(len(ln)>3):
+                    for part in ln:
+                        parseTransitionParameter(part)
+    if(len(line)>=11 and line[0:11] == '$QUADRUPOLE'):
+        ln = line.split(dataFileSeparator)
+        startInd = int(ln[1])
+        for i in range(0,len(levels)):
+            if(isQuadrupoleTrans(startInd,i) and transitionIndex(startInd,i) == -1):
+                transitions.append({'i' : startInd, 'f' : i})
+                if(len(ln)>3):
+                    for part in ln:
+                        parseTransitionParameter(part)
+        
 if(labelError):
     for lvl in levels:
         lvl['xstart']=1
@@ -189,24 +248,18 @@ if(not labelError):
         l['xstart']+=(rangeX + 1)*multiplicities.index(l['mult'])
         maxX=max(maxX,l['xstart'])
     
-    
+
 if(showElectricDipole):
     for i in range(0,len(levels)):
         for j in range(i+1,len(levels)):
-            delta_j = abs(levels[i]['j']-levels[j]['j'])
-            if(delta_j == Fraction(1,1)):
-                if(abs(levels[i]['l']-levels[j]['l'])==1):
-                    if(levels[i]['s']==levels[j]['s']):
-                        transitions.append({'i' : i, 'f' : j})
+            if(isDipoleTrans(i,j)):
+                transitions.append({'i' : i, 'f' : j})
                     
 if(showElectricQuadrupole):
     for i in range(0,len(levels)):
         for j in range(i+1,len(levels)):
-            delta_j = abs(levels[i]['j']-levels[j]['j'])
-            if(delta_j == Fraction(2,1) or delta_j == Fraction(0,1)):
-                if(abs(levels[i]['l']-levels[j]['l'])==2):
-                    if(abs(levels[i]['s']-levels[j]['s'])==1.0):
-                        transitions.append({'i' : i, 'f' : j})
+            if(isQuadrupoleTrans):
+                transitions.append({'i' : i, 'f' : j})
 
 def nmString(transition):
     return str(int(1239.8393589807376/abs(levels[trans['i']]['energy'] - levels[trans['f']]['energy']))) + 'nm'
