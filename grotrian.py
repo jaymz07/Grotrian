@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from fractions import Fraction
 
 levelWidth = 0.3
-labelSpacing=0.1
+labelSpacing=0.15
 
 #dataFile = 'data_files/Mg-II.levels'
 dataFile= 'data_files/mg-diagrams/2.levels'
@@ -24,6 +24,8 @@ showElectricQuadrupole =    False
 showSplittings =        True
 exaggerateSplittings =  True
 splitMargin = .04
+
+headLength, headWidth = 0.2, 0.2
 
 for i in range(0,len(sys.argv)):
     if((sys.argv[i] == '-i' or sys.argv[i]=='--input') and len(sys.argv)>i+1):
@@ -89,8 +91,8 @@ def isQuadrupoleTrans(i,j):
     delta_j = abs(levels[i]['j']-levels[j]['j'])
     delta_l = abs(levels[i]['l']-levels[j]['l'])
     delta_s = abs(levels[i]['s']-levels[j]['s'])
-    if(delta_j in {0,1,2}):
-        if(delta_l in {0,2}):
+    if(delta_j in {2}):
+        if(delta_l in {2}):
             if(delta_s==0.0):
                 return True
     return False
@@ -338,13 +340,13 @@ for t in transitions:
         dx += levelWidth/2
         dy = (splittings[indF[0]]['levels'][indF[1]]['energy'] - splittings[indF[0]]['avgEn'])*exScale + splittings[indF[0]]['avgEn'] - y
     dr = np.sqrt(dx**2+dy**2)
-    headLength, headWidth = 0.0, 0.00
     tColor = 'red'
     aColor = 'blue'
     if(t.has_key('color')):
         tColor=t['color'].rstrip()
         aColor = tColor
-    plt.arrow(x,y,dx-dx/dr*headLength,dy-dy/dr*headLength,head_width=headWidth,head_length=headLength,color=tColor)
+    #plt.arrow(x,y,dx-dx/dr*headLength,dy-dy/dr*headLength,head_width=headWidth,head_length=headLength,color=tColor)
+    plt.annotate("", xy=(dx+x,dy+y), xytext=(x, y),arrowprops=dict(arrowstyle="->",color=tColor))
     plt.annotate(t['label'],xy=(x+dx/2,y+dy/2),color=aColor)
 plt.ylim(minY-yMargin*yRange,maxY+yMargin*yRange)
 plt.ylabel(scale)
