@@ -15,7 +15,7 @@ levelWidth = 0.3
 labelSpacing=0.15
 
 #dataFile = 'data_files/Mg-II.levels'
-dataFile= 'data_files/mg-diagrams/2.levels'
+dataFile= 'data_files/mg-diagrams/2_fluorescence.csv'
 dataFileSeparator = ','
 
 showElectricDipole =        False
@@ -81,7 +81,7 @@ def parseTransitionParameter(param):
 def isDipoleTrans(i,j):
     if(i==j): return False
     delta_j = abs(levels[i]['j']-levels[j]['j'])
-    if(delta_j == Fraction(1,1)):
+    if(delta_j in {0,1}):
         if(abs(levels[i]['l']-levels[j]['l'])==1):
             if(levels[i]['s']==levels[j]['s']):
                 return True
@@ -91,7 +91,7 @@ def isQuadrupoleTrans(i,j):
     delta_j = abs(levels[i]['j']-levels[j]['j'])
     delta_l = abs(levels[i]['l']-levels[j]['l'])
     delta_s = abs(levels[i]['s']-levels[j]['s'])
-    if(delta_j in {2}):
+    if(delta_j in {0,1,2}):
         if(delta_l in {2}):
             if(delta_s==0.0):
                 return True
@@ -103,11 +103,17 @@ formatCommands = []
 for line in file:
     if(len(line)==0):
         continue
-    if(len(line)>=11 and line[0:11] == '$TRANSITION'):
+    elif(line[0]=='#'):
+        continue
+    elif(len(line)>=11 and line[0:11] == '$TRANSITION'):
         formatCommands.append(line)
-    if(len(line)>=7 and line[0:7] == '$DIPOLE'):
+    elif(len(line)>=7 and line[0:7] == '$DIPOLE'):
         formatCommands.append(line)
-    if(len(line)>=11 and line[0:11] == '$QUADRUPOLE'):
+    elif(len(line)>=11 and line[0:11] == '$QUADRUPOLE'):
+        formatCommands.append(line)
+    elif(len(line)>=18 and line[0:18] == '$QUADRUPOLE-EXCITE'):
+        formatCommands.append(line)
+    elif(len(line)>=14 and line[0:14] == '$DIPOLE-EXCITE'):
         formatCommands.append(line)
         
         
@@ -219,7 +225,16 @@ for line in formatCommands:
         if(len(ln)>3):
             for part in ln:
                 parseTransitionParameter(part)
-    if(len(line)>=7 and line[0:7] == '$DIPOLE'):
+    elif(len(line)>=14 and line[0:14] == '$DIPOLE-EXCITE'):
+        ln = line.split(dataFileSeparator)
+        startInd = int(ln[1])
+        for i in range(0,len(levels)):
+            if(isDipoleTrans(startInd,i) and transitionIndex(startInd,i) == -1 and levels[startInd]['energy'] < levels[i]['energy']):
+                transitions.append({'i' : startInd, 'f' : i})
+                if(len(ln)>3):
+                    for part in ln:
+                        parseTransitionParameter(part)
+    elif(len(line)>=7 and line[0:7] == '$DIPOLE'):
         ln = line.split(dataFileSeparator)
         startInd = int(ln[1])
         for i in range(0,len(levels)):
@@ -228,7 +243,16 @@ for line in formatCommands:
                 if(len(ln)>3):
                     for part in ln:
                         parseTransitionParameter(part)
-    if(len(line)>=11 and line[0:11] == '$QUADRUPOLE'):
+    elif(len(line)>=18 and line[0:18] == '$QUADRUPOLE-EXCITE'):
+        ln = line.split(dataFileSeparator)
+        startInd = int(ln[1])
+        for i in range(0,len(levels)):
+            if(isQuadrupoleTrans(startInd,i) and transitionIndex(startInd,i) == -1 and levels[startInd]['energy'] < levels[i]['energy']):
+                transitions.append({'i' : startInd, 'f' : i})
+                if(len(ln)>3):
+                    for part in ln:
+                        parseTransitionParameter(part)
+    elif(len(line)>=11 and line[0:11] == '$QUADRUPOLE'):
         ln = line.split(dataFileSeparator)
         startInd = int(ln[1])
         for i in range(0,len(levels)):
@@ -237,7 +261,7 @@ for line in formatCommands:
                 if(len(ln)>3):
                     for part in ln:
                         parseTransitionParameter(part)
-        
+    
 if(labelError):
     for lvl in levels:
         lvl['xstart']=1
@@ -264,7 +288,7 @@ if(showElectricQuadrupole):
                 transitions.append({'i' : i, 'f' : j})
 
 def nmString(transition):
-    return str(int(1239.8393589807376/abs(levels[trans['i']]['energy'] - levels[trans['f']]['energy']))) + 'nm'
+    return str(int(round(1239.8393589807376/abs(levels[trans['i']]['energy'] - levels[trans['f']]['energy'])))) + 'nm'
 
 ##Append wavelength calculation to transition strings, if option set
 for trans in transitions:
@@ -358,4 +382,5 @@ else:
     plt.xticks([1],[''])
 for i in range(0,len(multiplicities)-1):
     plt.plot([5*(i+1),5*(i+1)],[minY-yMargin*yRange,maxY+yMargin*yRange],'-0')
+plt.get
 plt.show()
