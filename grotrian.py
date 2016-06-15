@@ -27,6 +27,14 @@ splitMargin = .04
 
 headLength, headWidth = 0.2, 0.2
 
+if(len(sys.argv) < 2):
+    from Tkinter import Tk
+    from tkFileDialog import askopenfilename
+    
+    Tk().withdraw() # we don't want a full GUI, so keep the root window from appearing
+    filename = askopenfilename() # show an "Open" dialog box and return the path to the selected file
+    dataFile = filename
+
 for i in range(0,len(sys.argv)):
     if((sys.argv[i] == '-i' or sys.argv[i]=='--input') and len(sys.argv)>i+1):
         dataFile=sys.argv[i+1]
@@ -54,6 +62,7 @@ for i in range(0,len(sys.argv)):
 
 title = 'Energy Level Diagram for ' + dataFile
 scale = 'cm$^{-1}$'
+nmConvFactor=1E7
 termSymbols = ['S','P','D','F','G','H','I','J','K','L','M','N','O','Q','R']
 labelError = False
 
@@ -127,6 +136,8 @@ for line in file:
                 title = vals[1]
             elif(vals[0] == '$SCALE'):
                 scale = vals[1]
+                if(scale in {'eV','ev','EV'}):
+                    nmConvFactor = 1239.8393589807376
             elif(vals[0] == '$SPLITSCALE'):
                 splitMargin = float(vals[1])
             else:
@@ -217,6 +228,8 @@ def transitionIndex(i,j):
         if((transitions[k]['i'] == i and transitions[k]['f']==j) or (transitions[k]['i'] == j and transitions[k]['f']==i)):
             return k
     return -1
+def transitionNM(trans):
+    return nmConvFactor/abs(levels[trans['f']]['energy']-levels[trans['i']]['energy'])
 
 for line in formatCommands:
     if(len(line)>=11 and line[0:11] == '$TRANSITION'):
@@ -288,7 +301,7 @@ if(showElectricQuadrupole):
                 transitions.append({'i' : i, 'f' : j})
 
 def nmString(transition):
-    return str(int(round(1239.8393589807376/abs(levels[trans['i']]['energy'] - levels[trans['f']]['energy'])))) + 'nm'
+    return str(int(round(nmConvFactor/abs(levels[trans['i']]['energy'] - levels[trans['f']]['energy'])))) + 'nm'
 
 ##Append wavelength calculation to transition strings, if option set
 for trans in transitions:
