@@ -8,6 +8,9 @@ Created on Mon May 16 17:25:10 2016
 import sys
 import copy
 import numpy as np
+
+import matplotlib
+matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
 from fractions import Fraction
 
@@ -28,8 +31,8 @@ splitMargin = .04
 headLength, headWidth = 0.2, 0.2
 
 if(len(sys.argv) < 2):
-    from Tkinter import Tk
-    from tkFileDialog import askopenfilename
+    from tkinter import Tk
+    from tkinter.filedialog import askopenfilename
     
     Tk().withdraw() # we don't want a full GUI, so keep the root window from appearing
     filename = askopenfilename() # show an "Open" dialog box and return the path to the selected file
@@ -62,7 +65,8 @@ for i in range(0,len(sys.argv)):
 
 title = 'Energy Level Diagram for ' + dataFile
 scale = 'cm$^{-1}$'
-nmConvFactor=1E7
+#nmConvFactor=1E7
+nmConvFactor = 1239.8393589807376
 termSymbols = ['S','P','D','F','G','H','I','J','K','L','M','N','O','Q','R']
 labelError = False
 
@@ -230,6 +234,24 @@ def transitionIndex(i,j):
     return -1
 def transitionNM(trans):
     return nmConvFactor/abs(levels[trans['f']]['energy']-levels[trans['i']]['energy'])
+    
+def printDipoleTable():
+    outString = '\\begin{table}[H]\n\\begin{center}\n\\begin{tabular}{| l | l |}\n\\hline\n\\text{Transition} & \\text{Wavelength (nm)} \\\\\n\\hline\n'
+    for i in range(0,len(levels)):
+        for j in range(i+1,len(levels)):
+            if(isDipoleTrans(i,j)):
+                outString = outString + '$' + levels[i]['label'] + '\\rightarrow' + levels[j]['label'] + '$ & $'  + str(nmConvFactor/abs(levels[i]['energy'] - levels[j]['energy'])) + '$ \\\\\n'
+    outString = outString + '\\hline\n\\end{tabular}{| l | l |}\n\\end{center}\n\\end{table}'
+    print(outString)
+
+def printQuadrupoleTable():
+    outString = '\\begin{table}[H]\n\\begin{center}\n\\begin{tabular}{| l | l |}\n\\hline\n\\text{Transition} & \\text{Wavelength (nm)} \\\\\n\\hline\n'
+    for i in range(0,len(levels)):
+        for j in range(i+1,len(levels)):
+            if(isQuadrupoleTrans(i,j)):
+                outString = outString + '$' + levels[i]['label'] + '\\rightarrow' + levels[j]['label'] + '$ & $'  + str(nmConvFactor/abs(levels[i]['energy'] - levels[j]['energy'])) + '$ \\\\\n'
+    outString = outString + '\\hline\n\\end{tabular}{| l | l |}\n\\end{center}\n\\end{table}'
+    print(outString)
 
 for line in formatCommands:
     if(len(line)>=11 and line[0:11] == '$TRANSITION'):
@@ -301,16 +323,18 @@ if(showElectricQuadrupole):
                 transitions.append({'i' : i, 'f' : j})
 
 def nmString(transition):
-    return str(int(round(nmConvFactor/abs(levels[trans['i']]['energy'] - levels[trans['f']]['energy'])))) + 'nm'
+    outVal = nmConvFactor/abs(levels[trans['i']]['energy'] - levels[trans['f']]['energy'])
+    outString = '%.2f nm' % outVal
+    return outString
 
 ##Append wavelength calculation to transition strings, if option set
 for trans in transitions:
-    if(not trans.has_key('label')):
-        if(trans.has_key('show-nm') and not trans['show-nm']):
+    if('label' not in trans):
+        if('show-nm' in trans and not trans['show-nm']):
             continue
         else:
             trans['label']=nmString(trans)
-    elif(trans.has_key('show-nm') and trans['show-nm']):
+    elif('show-nm' in trans and trans['show-nm']):
         trans['label']=trans['label'] + ' (' + nmString(trans) +')'
 
 yRange = maxY-minY
@@ -379,7 +403,7 @@ for t in transitions:
     dr = np.sqrt(dx**2+dy**2)
     tColor = 'red'
     aColor = 'blue'
-    if(t.has_key('color')):
+    if('color' in t):
         tColor=t['color'].rstrip()
         aColor = tColor
     #plt.arrow(x,y,dx-dx/dr*headLength,dy-dy/dr*headLength,head_width=headWidth,head_length=headLength,color=tColor)
@@ -395,5 +419,5 @@ else:
     plt.xticks([1],[''])
 for i in range(0,len(multiplicities)-1):
     plt.plot([5*(i+1),5*(i+1)],[minY-yMargin*yRange,maxY+yMargin*yRange],'-0')
-plt.get
-plt.show()
+
+plt.show(block=True)

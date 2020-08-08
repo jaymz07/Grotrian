@@ -15,6 +15,3 @@
 12.084606,5^2P_3/2,,,,
 12.794766,6^2S_1/2,,,,
 $TITLE=Mg$^+$,$SCALE=eV,,,,
-$TRANSITION,0,2,$LABEL=Cooling Transition,$COLOR=blue,$SHOW-NM=1
-$TRANSITION,2,3,$LABEL=Dipole Transition,$COLOR=green,$SHOW-NM=1
-$TRANSITION,3,9,$COLOR=red,$LABEL=Quadrupole Transition,$SHOW-NM=1
