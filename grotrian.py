@@ -57,7 +57,7 @@ class Grotrian:
             name: i for i, name in enumerate(column_order)
         }
 
-    def _parse_levels(self, level_width=0.3, delta_p=0.3, delta_c=0.6) -> None:
+    def _parse_levels(self, level_width=0.3, delta_p=0.4, delta_c=0.5) -> None:
         """Flatten the hierarchy and calculate absolute energies."""
         self.levels = {}
 
@@ -121,6 +121,8 @@ class Grotrian:
     def draw(self, ax=None, text_offset=0.05, level_width=0.3, delta_p=0.3, delta_c=0.6, ax_expan=0.25) -> Axes:
         """Draw the energy-level diagram."""
 
+        assert(delta_p + delta_c <= 1.0)
+
         self._parse_levels(level_width=level_width, delta_p=delta_p, delta_c=delta_c)
         self._calculate_coordinates()
 
@@ -178,9 +180,10 @@ class Grotrian:
                 zorder=2,
             )
 
-        ax.set_ylabel(
-            self.data["diagram"]["vertical_axis"].get("property", "energy")
-        )
+        title = self.data["diagram"].get("title", "")
+        ax.set_title(title)
+        ylabel = self.data["diagram"]["vertical_axis"].get("property", "energy")
+        ax.set_ylabel(ylabel)
         xl = ax.get_xlim()
         lbls = self._get_col_dict().keys()
         ax.set_xticks(range(len(lbls)), labels=lbls)

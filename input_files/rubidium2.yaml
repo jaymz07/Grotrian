@@ -1,0 +1,117 @@
+
+# Schematic fine and hyperfine structure of 87Rb.
+# Energies and offsets are illustrative, not precision spectroscopic values.
+
+format: grotrian
+version: 1
+
+diagram:
+  title: "87Rb Fine and Hyperfine Structure (Exaggerated)"
+  vertical_axis:
+    property: "Energy (schematic)"
+    unit: "arb. units"
+  horizontal_axis:
+    order: ["5S", "5P"]
+
+levels:
+  # Ground electronic state and its hyperfine structure
+  - id: ground
+    label: "$5^2S_{1/2}$"
+    col: "5S"
+    energy: 0.0
+    split:
+      - id: ground_F1
+        label: "$F=1$"
+        offset: -0.60
+      - id: ground_F2
+        label: "$F=2$"
+        offset: 0.36
+
+  # Excited 5P manifold, split first by fine structure
+  - id: excited
+    label: "$5P$"
+    col: "5P"
+    energy: 8.0
+    split:
+      # D1 upper state: 5P_1/2
+      - id: P12
+        label: "$5^2P_{1/2}$"
+        offset: -1.5
+        split:
+          - id: P12_F1
+            label: "$F'=1$"
+            offset: -0.71
+          - id: P12_F2
+            label: "$F'=2$"
+            offset: 0.43
+
+      # D2 upper state: 5P_3/2
+      - id: P32
+        label: "$5^2P_{3/2}$"
+        offset: 1.5
+        split:
+          - id: P32_F0
+            label: "$F'=0$"
+            offset: -1.2
+          - id: P32_F1
+            label: "$F'=1$"
+            offset: -0.7
+          - id: P32_F2
+            label: "$F'=2$"
+            offset: 0.2
+          - id: P32_F3
+            label: "$F'=3$"
+            offset: 1.0
+
+transitions:
+  # D1 transitions: 5S_1/2 -> 5P_1/2
+  - from: ground_F1
+    to: P12_F1
+    color: "tab:blue"
+    linewidth: 1.6
+
+  - from: ground_F1
+    to: P12_F2
+    color: "tab:blue"
+    linewidth: 1.6
+
+  - from: ground_F2
+    to: P12_F1
+    color: "tab:orange"
+    linewidth: 1.6
+
+  - from: ground_F2
+    to: P12_F2
+    color: "tab:orange"
+    linewidth: 1.6
+
+  # D2 transitions: 5S_1/2 -> 5P_3/2
+  # - from: ground_F1
+  #   to: P32_F0
+  #   color: "tab:green"
+  #   linewidth: 1.6
+  #
+  # - from: ground_F1
+  #   to: P32_F1
+  #   color: "tab:green"
+  #   linewidth: 1.6
+  #
+  # - from: ground_F1
+  #   to: P32_F2
+  #   color: "tab:green"
+  #   linewidth: 1.6
+  #
+  # - from: ground_F2
+  #   to: P32_F1
+  #   color: "tab:red"
+  #   linewidth: 1.6
+  #
+  # - from: ground_F2
+  #   to: P32_F2
+  #   color: "tab:red"
+  #   linewidth: 1.6
+  #
+  # - from: ground_F2
+  #   to: P32_F3
+  #   color: "tab:red"
+  #   linewidth: 1.6

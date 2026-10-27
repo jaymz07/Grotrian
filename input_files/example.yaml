@@ -1,0 +1,54 @@
+
+format: grotrian
+version: 1
+
+diagram:
+  title: "Nested Splitting Example"
+  vertical_axis:
+    property: "Energy (cm$^{-1}$)"
+  horizontal_axis:
+    order: ["S", "P", "D", "F"]
+
+levels:
+  - id: ground
+    label: "$2^2S_{1/2}$"
+    col: "S"
+    energy: 0.0
+    show: true
+
+  - id: excited
+    label: "$2^2P$"
+    col: "P"
+    energy: 0.03
+    split:
+      - id: F0
+        label: "$j=1/2$"
+        offset: -0.005
+      - id: F1
+        label: "$j=3/2$"
+        offset: 0.005
+        split:
+          - id: F1_0
+            label: "$F=1$"
+            offset: 0.002
+          - id: F1_1
+            label: "$F=0$"
+            offset: -0.002
+
+  - id: excited_2
+    label: "$1^2S_{1/2}$"
+    col: "S"
+    energy: 0.03
+
+
+# transitions:
+#   - from: F0
+#     to: excited
+#     label: "Transition A"
+#     color: blue
+#
+#   - from: F1_0
+#     to: excited
+#     label: "Transition B"
+#     color: red
+

@@ -1,0 +1,65 @@
+
+# Schematic hyperfine structure of the 87Rb D1 line.
+# Energies are schematic and not intended for precision calculations.
+# Hyperfine splittings are shown approximately in their physical ratio;
+# the optical energy gap is compressed for visual clarity.
+
+format: grotrian
+version: 1
+
+diagram:
+  title: "87Rb D1 Hyperfine Structure"
+  vertical_axis:
+    property: "Energy (schematic)"
+  horizontal_axis:
+    order: ["5S", "5P"]
+
+levels:
+  # Ground-state manifold
+  - id: ground
+    label: "$5^2S_{1/2}$"
+    col: "5S"
+    energy: 0.0
+    split:
+      - id: ground_F1
+        label: "$F=1$"
+        offset: -0.60
+      - id: ground_F2
+        label: "$F=2$"
+        offset: 0.36
+
+  # Excited-state manifold: D1 line
+  - id: excited
+    label: "$5^2P_{1/2}$"
+    col: "5P"
+    energy: 8.0
+    split:
+      - id: excited_F1
+        label: "$F'=1$"
+        offset: -0.71
+      - id: excited_F2
+        label: "$F'=2$"
+        offset: 0.43
+
+transitions:
+  # Transitions from F=1
+  - from: ground_F1
+    to: excited_F1
+    color: "tab:blue"
+    linewidth: 1.8
+
+  - from: ground_F1
+    to: excited_F2
+    color: "tab:orange"
+    linewidth: 1.8
+
+  # Transitions from F=2
+  - from: ground_F2
+    to: excited_F1
+    color: "tab:green"
+    linewidth: 1.8
+
+  - from: ground_F2
+    to: excited_F2
+    color: "tab:red"
+    linewidth: 1.8

@@ -1,0 +1,62 @@
+format: grotrian
+version: 1
+
+diagram:
+  title: "Hydrogen Fine Structure"
+  vertical_axis:
+    property: Energy (eV)
+  horizontal_axis:
+    order: ["S", "P", "D", "F"]
+
+
+levels:
+  - id: ground
+    label: "$1^2S_{1/2}$"
+    col: "S"
+    energy: 0.0
+
+  - id: e1
+    label: "$2^2P$"
+    col: "P"
+    energy: 10.2
+    split:
+      - id: e1_1
+        label: "$2^2P_{1/2}$"
+        offset: -0.4 # Exaggerated
+      - id: e1_2
+        label: "$2^2P_{3/2}$"
+        offset: +0.4
+
+  - id: e2
+    label: "$2^2S_{1/2}$"
+    col: "S"
+    energy: 10.2
+
+  - id: e3
+    label: "$3^2P$"
+    col: "P"
+    energy: 12.09
+    split:
+      - id: e3_1
+        label: "$3^2P_{1/2}$"
+        offset: -0.4
+      - id: e3_2
+        label: "$3^2P_{3/2}$"
+        offset: +0.4
+
+  - id: e4
+    label: "$3^2S_{1/2}$"
+    col: "S"
+    energy: 12.09
+
+  - id: e5
+    label: "$3^2D$"
+    col: "D"
+    energy: 12.09
+    split:
+      - id: e5_1
+        label: "$3^2D_{3/2}$"
+        offset: -0.4
+      - id: e5_2
+        label: "$3^2D_{5/2}$"
+        offset: +0.4
