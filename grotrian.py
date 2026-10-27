@@ -1,423 +1,189 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Mon May 16 17:25:10 2016
+#!/usr/bin/env python3
+"""Create spectroscopic energy-level diagrams from YAML files."""
 
-@author: jaymz_ubuntu
-"""
+import argparse
+from pathlib import Path
 
-import sys
-import copy
-import numpy as np
-
-import matplotlib
-matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
-from fractions import Fraction
+import yaml
 
-levelWidth = 0.3
-labelSpacing=0.15
+from typing import Any, Iterable
+from matplotlib.axes import Axes
 
-#dataFile = 'data_files/Mg-II.levels'
-dataFile= 'data_files/mg-diagrams/2_fluorescence.csv'
-dataFileSeparator = ','
+class Grotrian:
+    """Represent and draw a Grotrian diagram."""
 
-showElectricDipole =        False
-showElectricQuadrupole =    False
+    def __init__(self, filename):
+        self.filename = Path(filename)
+        self.data = self._read_file(self.filename)
+        self._validate()
 
-showSplittings =        True
-exaggerateSplittings =  True
-splitMargin = .04
+        self.transitions = self.data.get("transitions", [])
 
-headLength, headWidth = 0.2, 0.2
+    @staticmethod
+    def _read_file(filename: Path) -> dict[str, Any]:
+        try:
+            with filename.open("r", encoding="utf-8") as stream:
+                data = yaml.safe_load(stream)
+        except OSError as exc:
+            raise OSError(f"Could not read Grotrian file {filename}: {exc}") from exc
+        except yaml.YAMLError as exc:
+            raise ValueError(f"Invalid YAML in {filename}: {exc}") from exc
 
-if(len(sys.argv) < 2):
-    from tkinter import Tk
-    from tkinter.filedialog import askopenfilename
-    
-    Tk().withdraw() # we don't want a full GUI, so keep the root window from appearing
-    filename = askopenfilename() # show an "Open" dialog box and return the path to the selected file
-    dataFile = filename
+        if not isinstance(data, dict):
+            raise ValueError("The input file must contain a YAML mapping.")
+        return data
 
-for i in range(0,len(sys.argv)):
-    if((sys.argv[i] == '-i' or sys.argv[i]=='--input') and len(sys.argv)>i+1):
-        dataFile=sys.argv[i+1]
-    elif((sys.argv[i] == '-d' or sys.argv[i]=='--dipole')):
-        showElectricDipole = True
-    elif((sys.argv[i] == '-q' or sys.argv[i]=='--quadrupole')):
-        showElectricQuadrupole = True
-    elif((sys.argv[i] == '-l' or sys.argv[i]=='--no-splitting')):
-        showSplittings = False
-    elif((sys.argv[i] == '-e' or sys.argv[i]=='--no-exaggerate')):
-        exaggerateSplittings = False
-    elif((sys.argv[i] == '-s' or sys.argv[i]=='--seperator') and len(sys.argv)>i+1):
-        dataFileSeparator=sys.argv[i+1]
-    elif((sys.argv[i] == '-h' or sys.argv[i]=='--help')):
-        print('----------------------------------\nGroutrian diagram generator. Takes input from list of energy levels and outputs an energy level diagram.\n\nCommand line options:\nArgument\t\t\tParameter\t\tInfo\n\
-        -i,--input\t\t[file]\t\tInput file.\n\
-        -d,--dipole\t\t\t\tShow dipole transitions\n\
-        -q,--quadrupole\t\t\t\tShow quadrupole transitions\n\
-        -l,--no-splitting\t\t\tDisable level splitting\n\
-        -e,--no-exaggerate\t\t\tDisable level splitting exaggeration\n\
-        -s,--separator\t\t[Delimiter]\tSpecify custom delimiter character. (Default is \',\')\n\
-        -h,--help\t\t\t\tShow this help\n\n----------------------------------\n')
-        sys.exit()
-        
+    def _validate(self) -> None:
+        if self.data.get("format") != "grotrian":
+            raise ValueError("Input file must specify format: grotrian")
 
-title = 'Energy Level Diagram for ' + dataFile
-scale = 'cm$^{-1}$'
-#nmConvFactor=1E7
-nmConvFactor = 1239.8393589807376
-termSymbols = ['S','P','D','F','G','H','I','J','K','L','M','N','O','Q','R']
-labelError = False
+        if self.data.get("version") != 1:
+            raise ValueError("Unsupported or missing Grotrian format version.")
 
-file = open(dataFile,'r')
-minY, maxY, minX, maxX = 0, 0, 0, 0
-maxl = 0
-yMargin = 0.1
+        if not isinstance(self.data.get("diagram"), dict):
+            raise ValueError("'diagram' must be a mapping.")
 
-levels = []
-transitions = []
-splittings = []
+        if not isinstance(self.data.get("levels"), list):
+            raise ValueError("'levels' must be a list.")
 
-def parseTransitionParameter(param):
-    command=param.split('=')
-    if(command[0]=='$LABEL'):
-        transitions[-1]['label']=command[1]
-    elif(command[0]=='$COLOR'):
-        transitions[-1]['color']=command[1]
-    elif(command[0]=='$SHOW-NM'):
-        if(command[1].rstrip()=='1' or command[1].rstrip().lower()=='t'):
-            transitions[-1]['show-nm']=True
-        else:
-            transitions[-1]['show-nm']=False
-    
-def isDipoleTrans(i,j):
-    if(i==j): return False
-    delta_j = abs(levels[i]['j']-levels[j]['j'])
-    if(delta_j in {0,1}):
-        if(abs(levels[i]['l']-levels[j]['l'])==1):
-            if(levels[i]['s']==levels[j]['s']):
-                return True
-    return False
-def isQuadrupoleTrans(i,j):
-    if(i==j): return False
-    delta_j = abs(levels[i]['j']-levels[j]['j'])
-    delta_l = abs(levels[i]['l']-levels[j]['l'])
-    delta_s = abs(levels[i]['s']-levels[j]['s'])
-    if(delta_j in {0,1,2}):
-        if(delta_l in {2}):
-            if(delta_s==0.0):
-                return True
-    return False
+        if not isinstance(self.data["diagram"].get("horizontal_axis", {}).get("order"), list):
+            raise ValueError("'diagram.horizontal_axis.order' must be a list.")
 
-formatCommands = []
+    def _get_col_dict(self) -> dict[str, float]:
+        """Map from term symbols to diagram x-coordinates."""
+        column_order = self.data["diagram"]["horizontal_axis"]["order"]
+        return {
+            name: i for i, name in enumerate(column_order)
+        }
 
-##Read data file
-for line in file:
-    if(len(line)==0):
-        continue
-    elif(line[0]=='#'):
-        continue
-    elif(len(line)>=11 and line[0:11] == '$TRANSITION'):
-        formatCommands.append(line)
-    elif(len(line)>=7 and line[0:7] == '$DIPOLE'):
-        formatCommands.append(line)
-    elif(len(line)>=11 and line[0:11] == '$QUADRUPOLE'):
-        formatCommands.append(line)
-    elif(len(line)>=18 and line[0:18] == '$QUADRUPOLE-EXCITE'):
-        formatCommands.append(line)
-    elif(len(line)>=14 and line[0:14] == '$DIPOLE-EXCITE'):
-        formatCommands.append(line)
-        
-        
-    elif(line[0] == '$'):
-        ln = line.split(dataFileSeparator)
-        for command in ln:  
-            vals = command.split("=")
-            if(len(command)==0):
+    def _parse_levels(self, level_width=0.3, delta_p=0.3, delta_c=0.6) -> None:
+        """Flatten the hierarchy and calculate absolute energies."""
+        self.levels = {}
+
+        def visit(level, parent=None, w=level_width, offs=0, parent_energy=0.0, parent_col=None):
+            energy = (
+                level["energy"]
+                if "energy" in level
+                else parent_energy + level["offset"]
+            )
+            col = level.get("col", parent_col)
+            has_child = "split" in level
+            width = w*delta_p if has_child else w
+            x0 = offs - w + delta_p*w if has_child else offs
+
+
+            self.levels[level["id"]] = {
+                "id": level["id"],
+                "label": level.get("label", level["id"]),
+                "energy": energy,
+                "col": col,
+                "parent": parent,
+                "has_child": has_child,
+                "show": level.get("show", True),
+                "width": width,
+                "x_offs": x0,
+            }
+
+            for child in level.get("split", []):
+                visit(child,
+                      parent=level["id"],
+                      w=w*delta_c,
+                      offs=offs + w - delta_c*w,
+                      parent_energy=energy,
+                      parent_col=col)
+
+        for level in self.data["levels"]:
+            visit(level)
+
+    def _calculate_coordinates(self) -> None:
+        """Scale to diagram coordinates."""
+        column_x = self._get_col_dict()
+
+        self.coordinates = {}
+
+        for level_id, level in self.levels.items():
+
+            x = column_x[level["col"]]
+            x = x + level["x_offs"]
+            energy = level["energy"]
+
+            parent = level["parent"]
+
+            self.coordinates[level_id] = {
+                "left": x - level['width'],
+                "right": x + level['width'],
+                "energy": energy,
+                "parent": parent,
+                "show": level["show"]
+            }
+
+    def draw(self, ax=None, text_offset=0.05, level_width=0.3, delta_p=0.3, delta_c=0.6, ax_expan=0.25) -> Axes:
+        """Draw the energy-level diagram."""
+
+        self._parse_levels(level_width=level_width, delta_p=delta_p, delta_c=delta_c)
+        self._calculate_coordinates()
+
+        if ax is None:
+            _, ax = plt.subplots()
+        assert isinstance(ax, Axes)
+
+        for level_id, coords in self.coordinates.items():
+            if not coords["show"]:
                 continue
-            if(vals[0] == '$TITLE'):
-                title = vals[1]
-            elif(vals[0] == '$SCALE'):
-                scale = vals[1]
-                if(scale in {'eV','ev','EV'}):
-                    nmConvFactor = 1239.8393589807376
-            elif(vals[0] == '$SPLITSCALE'):
-                splitMargin = float(vals[1])
-            else:
-                print('Invalid Command encountered data file' + dataFile)
-                print('---->' + line)
-    else:
-        ln = line.split(dataFileSeparator)
-        if(len(ln[0])==0):
-            continue
-        v=float(ln[0])
-        levels.append({'energy' : v, 'label' : ln[1]})
-        minY = min(v,minY)
-        maxY = max(v,maxY)
-file.close()
-multiplicities=[]
 
-##Parse level properties from label
-for i in range(0,len(levels)):
-    lbl = levels[i]['label']
-    if(lbl.count('^') == 1 and lbl.count('_')==1):
-        st = lbl
-        st=st.split('^')
-        
-        levels[i]['n']=int(st[0])
-        levels[i]['mult']=int(st[1][0])
-        levels[i]['j']=Fraction(st[1].split('_')[-1])
-        
-        hasTerm = False
-        for j in range(0,len(termSymbols)):
-            if(termSymbols[j] in st[1]):
-                levels[i]['l'] = j
-                hasTerm = True
-        if(not hasTerm):
-            levels[i]['l']=-1
-        
-        xstart = levels[i]['l']+1
-        maxl=max(maxl,levels[i]['l'])
-        
-        levels[i]['s']=(levels[i]['mult']-1)/2
-        
-        if(levels[i]['mult'] > 1):
-            sLbl = str(levels[i]['n']) + '^' + str(levels[i]['mult']) + termSymbols[levels[i]['l']]
-            haveLevel = False
-            for j in range(0,len(splittings)):
-                if(splittings[j]['label'] == sLbl):
-                    splittings[j]['levels'].append({'j' : levels[i]['j'], 'energy' : levels[i]['energy']})
-                    haveLevel = True
-                    break
-            if(not haveLevel):
-                splittings.append({'label' : sLbl, 'levels' : [{'j' : levels[i]['j'], 'energy' : levels[i]['energy']}] })
-        
-        levels[i]['xstart']=xstart
-        minX=min(xstart,minX)
-        maxX=max(xstart,maxX)
-        
-        if(levels[i]['mult'] not in multiplicities):
-            multiplicities.append(levels[i]['mult'])
-    else:
-        labelError = True
-        levels[i]['xstart']=1
-        print("Invalid level label encountered. Will not parse state properties")
+            # Draw the levels
+            ax.hlines(
+                y=coords["energy"],
+                xmin=coords["left"],
+                xmax=coords["right"],
+                color="black",
+                linewidth=1.5,
+            )
 
-##Remove level splittings containing only one level and sort remaining levels
-count = 0
-while(count < len(splittings)):
-    if(len(splittings[count]['levels']) <= 1):
-        del splittings[count]
-    else:
-        minE = splittings[count]['levels'][0]['energy']
-        maxE = minE
-        avgE = 0
-        for i in range(0,len(splittings[count]['levels'])):
-            eI = splittings[count]['levels'][i]['energy']
-            avgE += eI
-            minE=min(minE,eI)
-            maxE=max(maxE,eI)
-            for j in range(i+1,len(splittings[count]['levels'])):
-                if(eI > splittings[count]['levels'][j]['energy']):
-                    temp = copy.deepcopy(splittings[count]['levels'][i])
-                    splittings[count]['levels'][i] = splittings[count]['levels'][j]
-                    splittings[count]['levels'][j] = temp
-        splittings[count]['width']=maxE-minE
-        splittings[count]['avgEn']=avgE/len(splittings[count]['levels'])
-        count = count+1
-        
-def transitionIndex(i,j):
-    for k in range(0,len(transitions)):
-        if((transitions[k]['i'] == i and transitions[k]['f']==j) or (transitions[k]['i'] == j and transitions[k]['f']==i)):
-            return k
-    return -1
-def transitionNM(trans):
-    return nmConvFactor/abs(levels[trans['f']]['energy']-levels[trans['i']]['energy'])
-    
-def printDipoleTable():
-    outString = '\\begin{table}[H]\n\\begin{center}\n\\begin{tabular}{| l | l |}\n\\hline\n\\text{Transition} & \\text{Wavelength (nm)} \\\\\n\\hline\n'
-    for i in range(0,len(levels)):
-        for j in range(i+1,len(levels)):
-            if(isDipoleTrans(i,j)):
-                outString = outString + '$' + levels[i]['label'] + '\\rightarrow' + levels[j]['label'] + '$ & $'  + str(nmConvFactor/abs(levels[i]['energy'] - levels[j]['energy'])) + '$ \\\\\n'
-    outString = outString + '\\hline\n\\end{tabular}{| l | l |}\n\\end{center}\n\\end{table}'
-    print(outString)
+            # Draw the splitting lines for each child
+            if coords['parent'] is not None:
+                par_coords = self.coordinates[coords['parent']]
+                ax.plot([par_coords['right'], coords['left']],[par_coords['energy'], coords['energy']], lw=1.0, c='black', ls='--', alpha=0.4)
 
-def printQuadrupoleTable():
-    outString = '\\begin{table}[H]\n\\begin{center}\n\\begin{tabular}{| l | l |}\n\\hline\n\\text{Transition} & \\text{Wavelength (nm)} \\\\\n\\hline\n'
-    for i in range(0,len(levels)):
-        for j in range(i+1,len(levels)):
-            if(isQuadrupoleTrans(i,j)):
-                outString = outString + '$' + levels[i]['label'] + '\\rightarrow' + levels[j]['label'] + '$ & $'  + str(nmConvFactor/abs(levels[i]['energy'] - levels[j]['energy'])) + '$ \\\\\n'
-    outString = outString + '\\hline\n\\end{tabular}{| l | l |}\n\\end{center}\n\\end{table}'
-    print(outString)
+            # Level Labels
+            ax.text(
+                coords["left"] - text_offset,
+                coords["energy"],
+                self.levels[level_id]["label"],
+                va="center",
+                ha="right",
+            )
 
-for line in formatCommands:
-    if(len(line)>=11 and line[0:11] == '$TRANSITION'):
-        ln = line.split(dataFileSeparator)
-        transitions.append({'i': int(ln[1]), 'f': int(ln[2])})
-        if(len(ln)>3):
-            for part in ln:
-                parseTransitionParameter(part)
-    elif(len(line)>=14 and line[0:14] == '$DIPOLE-EXCITE'):
-        ln = line.split(dataFileSeparator)
-        startInd = int(ln[1])
-        for i in range(0,len(levels)):
-            if(isDipoleTrans(startInd,i) and transitionIndex(startInd,i) == -1 and levels[startInd]['energy'] < levels[i]['energy']):
-                transitions.append({'i' : startInd, 'f' : i})
-                if(len(ln)>3):
-                    for part in ln:
-                        parseTransitionParameter(part)
-    elif(len(line)>=7 and line[0:7] == '$DIPOLE'):
-        ln = line.split(dataFileSeparator)
-        startInd = int(ln[1])
-        for i in range(0,len(levels)):
-            if(isDipoleTrans(startInd,i) and transitionIndex(startInd,i) == -1):
-                transitions.append({'i' : startInd, 'f' : i})
-                if(len(ln)>3):
-                    for part in ln:
-                        parseTransitionParameter(part)
-    elif(len(line)>=18 and line[0:18] == '$QUADRUPOLE-EXCITE'):
-        ln = line.split(dataFileSeparator)
-        startInd = int(ln[1])
-        for i in range(0,len(levels)):
-            if(isQuadrupoleTrans(startInd,i) and transitionIndex(startInd,i) == -1 and levels[startInd]['energy'] < levels[i]['energy']):
-                transitions.append({'i' : startInd, 'f' : i})
-                if(len(ln)>3):
-                    for part in ln:
-                        parseTransitionParameter(part)
-    elif(len(line)>=11 and line[0:11] == '$QUADRUPOLE'):
-        ln = line.split(dataFileSeparator)
-        startInd = int(ln[1])
-        for i in range(0,len(levels)):
-            if(isQuadrupoleTrans(startInd,i) and transitionIndex(startInd,i) == -1):
-                transitions.append({'i' : startInd, 'f' : i})
-                if(len(ln)>3):
-                    for part in ln:
-                        parseTransitionParameter(part)
-    
-if(labelError):
-    for lvl in levels:
-        lvl['xstart']=1
-        
+        column_x = self._get_col_dict()
 
-multiplicities.sort()
-rangeX = maxX-minX
-if(not labelError):
-    for l in levels:
-        l['xstart']+=(rangeX + 1)*multiplicities.index(l['mult'])
-        maxX=max(maxX,l['xstart'])
-    
+        # Draw the transitions
+        for transition in self.transitions:
+            source = self.coordinates[transition['from']]
+            target = self.coordinates[transition['to']]
 
-if(showElectricDipole):
-    for i in range(0,len(levels)):
-        for j in range(i+1,len(levels)):
-            if(isDipoleTrans(i,j)):
-                transitions.append({'i' : i, 'f' : j})
-                    
-if(showElectricQuadrupole):
-    for i in range(0,len(levels)):
-        for j in range(i+1,len(levels)):
-            if(isQuadrupoleTrans):
-                transitions.append({'i' : i, 'f' : j})
+            x0, y0 = (source["left"]+source["right"])/2, source["energy"]
+            x1, y1 = (target["left"]+target["right"])/2, target["energy"]
+            ax.annotate(
+                "",
+                xy=(x1, y1),
+                xytext=(x0, y0),
+                arrowprops={
+                    "arrowstyle": "->",
+                    "color": transition.get("color", "tab:blue"),
+                    "linewidth": float(transition.get("linewidth", 1.5)),
+                    #"shrinkA": 4,
+                    #"shrinkB": 4,
+                },
+                zorder=2,
+            )
 
-def nmString(transition):
-    outVal = nmConvFactor/abs(levels[trans['i']]['energy'] - levels[trans['f']]['energy'])
-    outString = '%.2f nm' % outVal
-    return outString
+        ax.set_ylabel(
+            self.data["diagram"]["vertical_axis"].get("property", "energy")
+        )
+        xl = ax.get_xlim()
+        lbls = self._get_col_dict().keys()
+        ax.set_xticks(range(len(lbls)), labels=lbls)
+        ax.set_xlim([xl[0] - ax_expan, xl[1]]) # Create extra space for labels
 
-##Append wavelength calculation to transition strings, if option set
-for trans in transitions:
-    if('label' not in trans):
-        if('show-nm' in trans and not trans['show-nm']):
-            continue
-        else:
-            trans['label']=nmString(trans)
-    elif('show-nm' in trans and trans['show-nm']):
-        trans['label']=trans['label'] + ' (' + nmString(trans) +')'
-
-yRange = maxY-minY
-
-def indexSplit(lvl):
-    splitIndex = -1
-    jInd = -1
-    lbl = lvl['label']
-    for i in range(0,len(splittings)):
-        if(splittings[i]['label'] == lbl.split('_')[0]):
-            splitIndex = i
-            break
-    for i in range(0,len(splittings[splitIndex]['levels'])):
-        if(splittings[splitIndex]['levels'][i]['j']==lvl['j']):
-            jInd = i
-            break
-    return [splitIndex, jInd]
-    
-##Plot level lines
-for level in levels:
-    lbl = level['label']
-    splitIndex = indexSplit(level)[0]
-    aPos = (level['xstart']-levelWidth-labelSpacing,level['energy'])
-    if(labelError or splitIndex==-1 or not showSplittings):
-        plt.plot([level['xstart']-levelWidth,level['xstart']+levelWidth],[level['energy'],level['energy']],'-0')
-        if(not labelError):
-            plt.annotate('$'+lbl.split('_')[0]+ '_{'+ str(level['j']) + '}$',xy=aPos)
-        else:
-            plt.annotate(lbl,xy=aPos)
-    else:
-        split = splittings[splitIndex]
-        avgEn = split['avgEn']
-        plt.plot([level['xstart']-levelWidth,level['xstart']-levelWidth/2],[avgEn]*2,'-0')
-        exScale = 1
-        if(exaggerateSplittings and showSplittings):
-            exScale = yRange*splitMargin/split['width']
-        for i in range(0,len(split['levels'])):
-            exEn = (split['levels'][i]['energy'] - avgEn)*exScale + avgEn
-            plt.plot([level['xstart']-levelWidth/2,level['xstart']],[avgEn,exEn],'--',color='black')
-            plt.plot([level['xstart'],level['xstart']+levelWidth],[exEn]*2,'-0')
-            sPos= (level['xstart'],exEn)
-            plt.annotate('$j='+ str(split['levels'][i]['j']) +'$',xy=sPos)
-        plt.annotate('$'+lbl.split('_')[0]+'$',xy=(aPos[0],avgEn))
-
-##Draw Transition arrows    
-for t in transitions:
-    indI = indexSplit(levels[t['i']])
-    indF = indexSplit(levels[t['f']])
-    x=levels[t['i']]['xstart']
-    y=levels[t['i']]['energy']
-    if(exaggerateSplittings and indI[0] > -1 and showSplittings):
-        exScale = 1
-        if(exaggerateSplittings):
-            exScale = yRange*splitMargin/splittings[indI[0]]['width']
-        x += levelWidth/2
-        y = (splittings[indI[0]]['levels'][indI[1]]['energy'] - splittings[indI[0]]['avgEn'])*exScale + splittings[indI[0]]['avgEn']
-        
-    dx = levels[t['f']]['xstart']-x
-    dy = levels[t['f']]['energy']-y
-    if(exaggerateSplittings and indF[0] > -1 and showSplittings):
-        exScale = 1
-        if(exaggerateSplittings):
-            exScale = yRange*splitMargin/splittings[indF[0]]['width']
-        dx += levelWidth/2
-        dy = (splittings[indF[0]]['levels'][indF[1]]['energy'] - splittings[indF[0]]['avgEn'])*exScale + splittings[indF[0]]['avgEn'] - y
-    dr = np.sqrt(dx**2+dy**2)
-    tColor = 'red'
-    aColor = 'blue'
-    if('color' in t):
-        tColor=t['color'].rstrip()
-        aColor = tColor
-    #plt.arrow(x,y,dx-dx/dr*headLength,dy-dy/dr*headLength,head_width=headWidth,head_length=headLength,color=tColor)
-    plt.annotate("", xy=(dx+x,dy+y), xytext=(x, y),arrowprops=dict(arrowstyle="->",color=tColor))
-    plt.annotate(t['label'],xy=(x+dx/2,y+dy/2),color=aColor)
-plt.ylim(minY-yMargin*yRange,maxY+yMargin*yRange)
-plt.ylabel(scale)
-plt.title(title)
-plt.xlim(0,5)
-if(not labelError):
-    plt.xticks(range(1,6*len(multiplicities)),(termSymbols[0:maxl+1]+[''])*len(multiplicities))
-else:
-    plt.xticks([1],[''])
-for i in range(0,len(multiplicities)-1):
-    plt.plot([5*(i+1),5*(i+1)],[minY-yMargin*yRange,maxY+yMargin*yRange],'-0')
-
-plt.show(block=True)
+        return ax

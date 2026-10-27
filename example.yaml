@@ -1,0 +1,55 @@
+
+format: grotrian
+version: 1
+
+diagram:
+  title: Hyperfine Structure
+  vertical_axis:
+    property: energy
+    unit: cm^-1
+  horizontal_axis:
+    order: ["S", "P", "D", "F"]
+
+levels:
+  - id: ground
+    label: "$^2S_{1/2}$"
+    col: "S"
+    energy: 0.0
+    show: true
+    split:
+      - id: F0
+        label: "$F=0$"
+        offset: -0.005
+      - id: F1
+        label: "$F=1$"
+        offset: 0.005
+        split:
+          - id: F1_0
+            label: "$G=1$"
+            offset: 0.001
+          - id: F1_1
+            label: "$G=2$"
+            offset: -0.001
+
+  - id: excited
+    label: "$^2P_{1/2}$"
+    col: "P"
+    energy: 0.03
+
+  - id: excited_2
+    label: "$^3S_{1/2}$"
+    col: "S"
+    energy: 0.03
+
+
+transitions:
+  - from: F0
+    to: excited
+    label: "Transition A"
+    color: blue
+
+  - from: F1_0
+    to: excited
+    label: "Transition B"
+    color: red
+
