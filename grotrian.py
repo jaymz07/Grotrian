@@ -83,6 +83,7 @@ class Grotrian:
                 "show": level.get("show", True),
                 "width": width,
                 "x_offs": x0,
+                "loc": level.get("loc", 'left'),
             }
 
             for child in level.get("split", []):
@@ -118,7 +119,7 @@ class Grotrian:
                 "show": level["show"]
             }
 
-    def draw(self, ax=None, text_offset=0.05, level_width=0.3, delta_p=0.3, delta_c=0.6, ax_expan=0.25) -> Axes:
+    def draw(self, ax=None, text_offset=0.05, level_width=0.3, delta_p=0.3, delta_c=0.6, ax_expan_l=0.25, ax_expan_r=0.0) -> Axes:
         """Draw the energy-level diagram."""
 
         assert(delta_p + delta_c <= 1.0)
@@ -133,6 +134,8 @@ class Grotrian:
         for level_id, coords in self.coordinates.items():
             if not coords["show"]:
                 continue
+
+            level = self.levels[level_id]
 
             # Draw the levels
             ax.hlines(
@@ -149,13 +152,24 @@ class Grotrian:
                 ax.plot([par_coords['right'], coords['left']],[par_coords['energy'], coords['energy']], lw=1.0, c='black', ls='--', alpha=0.4)
 
             # Level Labels
-            ax.text(
-                coords["left"] - text_offset,
-                coords["energy"],
-                self.levels[level_id]["label"],
-                va="center",
-                ha="right",
-            )
+            loc = level['loc'] if 'loc' in level else 'left'
+            match loc:
+                case 'left':
+                    lbl_x, lbl_y = coords["left"] - text_offset, coords["energy"],
+                    ha, va = 'right', 'center'
+                case 'right':
+                    lbl_x, lbl_y = coords["right"] + text_offset, coords["energy"],
+                    ha, va = 'left', 'center'
+                case 'above':
+                    lbl_x = (coords["right"] + coords["right"]) / 2
+                    lbl_y = coords["energy"] + text_offset, #Better coordinates needed
+                    ha, va = 'center', 'center'
+                case _:
+                    print(f"Invalid label location ('loc:') for level ID: {level_id}")
+                    lbl_x, lbl_y = coords["left"] - text_offset, coords["energy"],
+                    ha, va = 'right', 'center'
+
+            ax.text(lbl_x, lbl_y, level["label"], va=va, ha=ha)
 
         column_x = self._get_col_dict()
 
@@ -187,6 +201,6 @@ class Grotrian:
         xl = ax.get_xlim()
         lbls = self._get_col_dict().keys()
         ax.set_xticks(range(len(lbls)), labels=lbls)
-        ax.set_xlim([xl[0] - ax_expan, xl[1]]) # Create extra space for labels
+        ax.set_xlim([xl[0] - ax_expan_l, xl[1] + ax_expan_r]) # Create extra space for labels
 
         return ax

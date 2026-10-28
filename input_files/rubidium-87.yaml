@@ -6,7 +6,7 @@ format: grotrian
 version: 1
 
 diagram:
-  title: "87Rb Fine and Hyperfine Structure (Exaggerated)"
+  title: "$^{87}$Rb Fine and Hyperfine Structure (Exaggerated)"
   vertical_axis:
     property: "Energy (schematic)"
     unit: "arb. units"
@@ -22,9 +22,11 @@ levels:
     split:
       - id: ground_F1
         label: "$F=1$"
+        loc: 'right'
         offset: -0.60
       - id: ground_F2
         label: "$F=2$"
+        loc: 'right'
         offset: 0.36
 
   # Excited 5P manifold, split first by fine structure
@@ -40,9 +42,11 @@ levels:
         split:
           - id: P12_F1
             label: "$F'=1$"
+            loc: 'right'
             offset: -0.71
           - id: P12_F2
             label: "$F'=2$"
+            loc: 'right'
             offset: 0.43
 
       # D2 upper state: 5P_3/2
@@ -52,15 +56,19 @@ levels:
         split:
           - id: P32_F0
             label: "$F'=0$"
+            loc: 'right'
             offset: -1.2
           - id: P32_F1
             label: "$F'=1$"
+            loc: 'right'
             offset: -0.7
           - id: P32_F2
             label: "$F'=2$"
+            loc: 'right'
             offset: 0.2
           - id: P32_F3
             label: "$F'=3$"
+            loc: 'right'
             offset: 1.0
 
 transitions:
