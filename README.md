@@ -8,7 +8,7 @@ Grotrian generates customizable energy-level diagrams using Matplotlib. Define a
 
 The example below illustrates the fine and hyperfine structure of the \(^{87}\mathrm{Rb}\) \(5P\) manifold, including the D1 and D2 transition families. It demonstrates nested level splitting, inherited column positions, and explicitly defined transitions.
 
-![Grotrian diagram showing the fine and hyperfine structure of rubidium-87](example_outputs/rubidium-87.png)
+![Grotrian diagram showing the fine and hyperfine structure of rubidium-87](example_outputs/rubidium_combined.png)
 
 ## Quick start
 
@@ -61,7 +61,7 @@ You can also draw a diagram in a specific subplot:
 ```python
 fig, ax = plt.subplots(figsize=(8, 6))
 
-diagram = Grotrian("input_files/rubidium_combined.yaml")
+diagram = Grotrian("input_files/rubidium-87.yaml")
 diagram.draw(ax=ax)
 
 fig.tight_layout()
