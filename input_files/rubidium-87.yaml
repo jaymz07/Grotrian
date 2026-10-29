@@ -6,7 +6,7 @@ format: grotrian
 version: 1
 
 diagram:
-  title: "$^{87}$Rb Fine and Hyperfine Structure (Exaggerated)"
+  title: "$^{87}$Rb Fine and Hyperfine Structure"
   vertical_axis:
     property: "Energy (schematic)"
     unit: "arb. units"

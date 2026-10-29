@@ -61,7 +61,7 @@ You can also draw a diagram in a specific subplot:
 ```python
 fig, ax = plt.subplots(figsize=(8, 6))
 
-diagram = Grotrian("input_files/rubidium-87.yaml")
+diagram = Grotrian("input_files/rubidium_combined.yaml")
 diagram.draw(ax=ax)
 
 fig.tight_layout()

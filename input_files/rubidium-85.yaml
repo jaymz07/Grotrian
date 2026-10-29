@@ -1,0 +1,124 @@
+
+# Schematic fine and hyperfine structure of 85Rb.
+# Energies and offsets are illustrative, not precision spectroscopic values.
+
+format: grotrian
+version: 1
+
+diagram:
+  title: "$^{85}$Rb Fine and Hyperfine Structure"
+  vertical_axis:
+    property: "Energy (schematic)"
+  horizontal_axis:
+    order: ["5S", "5P"]
+
+levels:
+  # Ground electronic state and hyperfine structure
+  - id: ground
+    label: "$5^2S_{1/2}$"
+    col: "5S"
+    energy: 0.0
+    split:
+      - id: ground_F2
+        label: "$F=2$"
+        loc: 'right'
+        offset: -0.25
+      - id: ground_F3
+        label: "$F=3$"
+        loc: 'right'
+        offset: 0.18
+
+  # Excited 5P manifold, split by fine structure
+  - id: excited
+    label: "$5P$"
+    col: "5P"
+    energy: 8.0
+    split:
+      # D1 upper state: 5P_1/2
+      - id: P12
+        label: "$5^2P_{1/2}$"
+        offset: -1.0
+        split:
+          - id: P12_F2
+            label: "$F'=2$"
+            loc: 'right'
+            offset: -0.30
+          - id: P12_F3
+            label: "$F'=3$"
+            loc: 'right'
+            offset: 0.20
+
+      # D2 upper state: 5P_3/2
+      - id: P32
+        label: "$5^2P_{3/2}$"
+        offset: 1.0
+        split:
+          - id: P32_F1
+            label: "$F'=1$"
+            loc: 'right'
+            offset: -1.2
+          - id: P32_F2
+            label: "$F'=2$"
+            loc: 'right'
+            offset: -0.8
+          - id: P32_F3
+            label: "$F'=3$"
+            loc: 'right'
+            offset: -0.13
+          - id: P32_F4
+            label: "$F'=4$"
+            loc: 'right'
+            offset: 0.95
+
+transitions:
+  # D1 transitions: 5S_1/2 -> 5P_1/2
+  - from: ground_F2
+    to: P12_F2
+    color: "tab:blue"
+    linewidth: 1.6
+
+  - from: ground_F2
+    to: P12_F3
+    color: "tab:blue"
+    linewidth: 1.6
+
+  - from: ground_F3
+    to: P12_F2
+    color: "tab:orange"
+    linewidth: 1.6
+
+  - from: ground_F3
+    to: P12_F3
+    color: "tab:orange"
+    linewidth: 1.6
+
+  # D2 transitions: 5S_1/2 -> 5P_3/2
+  # - from: ground_F2
+  #   to: P32_F1
+  #   color: "tab:green"
+  #   linewidth: 1.6
+  #
+  # - from: ground_F2
+  #   to: P32_F2
+  #   color: "tab:green"
+  #   linewidth: 1.6
+  #
+  # - from: ground_F2
+  #   to: P32_F3
+  #   color: "tab:green"
+  #   linewidth: 1.6
+  #
+  # - from: ground_F3
+  #   to: P32_F2
+  #   color: "tab:red"
+  #   linewidth: 1.6
+  #
+  # - from: ground_F3
+  #   to: P32_F3
+  #   color: "tab:red"
+  #   linewidth: 1.6
+  #
+  # - from: ground_F3
+  #   to: P32_F4
+  #   color: "tab:red"
+  #   linewidth: 1.6
