@@ -17,7 +17,7 @@ The example below illustrates the fine and hyperfine structure of the \(^{87}\ma
 Python 3.10 or newer is recommended.
 
 ```bash
-python -m pip install matplotlib PyYAML
+python -m pip install matplotlib pyyaml
 ```
 
 ### 2. Generate a diagram
