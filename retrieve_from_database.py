@@ -5,6 +5,55 @@ from grotrian import Grotrian
 from ASDCache import SpectraCache
 
 def ASD_to_yaml(atomic_species, output_file='temp.yaml', N_levels=20, show_fine_structure=False, labels=True):
+    """
+    Retrieve atomic energy levels from NIST ASD and export them as a
+    Grotrian-compatible YAML file.
+
+    Energy levels are retrieved using ASDCache and grouped by electronic
+    configuration and spectroscopic term. Terms containing multiple
+    fine-structure components are represented by a parent level whose
+    energy is the mean of the component energies. Individual J levels
+    can optionally be included as nested sublevels.
+
+    Parameters
+    ----------
+    atomic_species : str
+        Atomic species identifier understood by NIST ASD, such as
+        ``'Rb I'``, ``'Rb II'``, or ``'Ca II'``.
+
+    output_file : str, optional
+        Destination path for the generated YAML file.
+        Defaults to ``'temp.yaml'``.
+
+    N_levels : int, optional
+        Maximum number of NIST energy-level records to consider, taken
+        from the beginning of the returned dataset. Defaults to 20.
+
+    show_fine_structure : bool, optional
+        If True, include individual fine-structure J components as
+        nested sublevels. If False, represent each configuration/term
+        group by a single parent level. Defaults to False.
+
+    labels : bool, optional
+        If True, include configuration labels in the generated diagram.
+        If False, omit these labels. Defaults to True.
+
+    Returns
+    -------
+    None
+        Writes the generated YAML representation to ``output_file``.
+
+    Notes
+    -----
+    The generated YAML is intended to be loaded directly by the
+    ``Grotrian`` class. NIST ASD does not generally provide hyperfine
+    structure or isotope-specific level information in the form needed
+    for detailed diagrams; these can be added manually to the exported
+    YAML file.
+
+    Fine-structure energy offsets are calculated relative to the mean
+    energy of their corresponding term.
+    """
     nist = SpectraCache()
     levels = nist.levels.fetch(atomic_species)
 
@@ -22,6 +71,32 @@ def ASD_to_yaml(atomic_species, output_file='temp.yaml', N_levels=20, show_fine_
         )
 
 def _parse_ASD_data(levels, N=30, show_fine_structure=True, labels=True, label_fine_structure=False):
+    """
+    Convert NIST ASD energy-level data into a Grotrian-compatible dictionary
+    which is ready for YAML serialization.
+
+    Levels are grouped by electronic configuration and spectroscopic term.
+    Fine-structure components are optionally represented as nested sublevels.
+
+    Parameters
+    ----------
+    levels : pandas.DataFrame
+        Energy-level data retrieved from NIST ASD.
+    N : int, optional
+        Maximum number of records to process. Defaults to 30.
+    show_fine_structure : bool, optional
+        Include individual J components as nested sublevels.
+    labels : bool, optional
+        Include configuration labels for the levels.
+    label_fine_structure : bool, optional
+        Include J-value labels for fine-structure sublevels.
+
+    Returns
+    -------
+    dict
+        Dictionary containing the Grotrian diagram data, ready for YAML
+        serialization.
+    """
     data = {'format': 'grotrian',
             'version': 1,
             'diagram': {
