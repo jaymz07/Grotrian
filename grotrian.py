@@ -202,7 +202,12 @@ class Grotrian:
                 if 'loc' in transition and transition['loc'] == 'left':
                     ha = 'right'
                     tx_offs = -text_offset
-                ax.text(xm+ tx_offs, ym, transition['label'], va='center', ha=ha, color=color)
+                bbox=dict(
+                    facecolor='white',
+                    edgecolor='none',
+                    boxstyle='square,pad=0.0', # Background size/padding amount
+                    alpha=0.85 )
+                ax.text(xm+ tx_offs, ym, transition['label'], va='center', ha=ha, color=color, bbox=bbox)
 
 
         title = self.data["diagram"].get("title", "")
