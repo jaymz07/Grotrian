@@ -180,19 +180,30 @@ class Grotrian:
 
             x0, y0 = (source["left"]+source["right"])/2, source["energy"]
             x1, y1 = (target["left"]+target["right"])/2, target["energy"]
+
+            color = transition.get("color", "tab:blue")
             ax.annotate(
                 "",
                 xy=(x1, y1),
                 xytext=(x0, y0),
                 arrowprops={
                     "arrowstyle": "->",
-                    "color": transition.get("color", "tab:blue"),
+                    "color": color,
                     "linewidth": float(transition.get("linewidth", 1.5)),
                     #"shrinkA": 4,
                     #"shrinkB": 4,
                 },
                 zorder=2,
             )
+            if 'label' in transition:
+                tx_offs = text_offset
+                xm, ym = (x0+x1)/2, (y0+y1)/2
+                ha = 'left' # default loc: 'right'
+                if 'loc' in transition and transition['loc'] == 'left':
+                    ha = 'right'
+                    tx_offs = -text_offset
+                ax.text(xm+ tx_offs, ym, transition['label'], va='center', ha=ha, color=color)
+
 
         title = self.data["diagram"].get("title", "")
         ax.set_title(title)

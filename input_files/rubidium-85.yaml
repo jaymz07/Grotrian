@@ -76,21 +76,21 @@ transitions:
     to: P12_F2
     color: "tab:blue"
     linewidth: 1.6
+    label: "Hyperfine transition"
 
-  - from: ground_F2
-    to: P12_F3
-    color: "tab:blue"
-    linewidth: 1.6
-
-  - from: ground_F3
-    to: P12_F2
+  - from: ground
+    to: P12
     color: "tab:orange"
     linewidth: 1.6
+    label: "D1 Line"
+    loc: 'left'
 
-  - from: ground_F3
-    to: P12_F3
+  - from: ground
+    to: P32
     color: "tab:orange"
     linewidth: 1.6
+    label: "D2 Line"
+    loc: 'left'
 
   # D2 transitions: 5S_1/2 -> 5P_3/2
   # - from: ground_F2

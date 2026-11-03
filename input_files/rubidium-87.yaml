@@ -77,49 +77,20 @@ transitions:
     to: P12_F1
     color: "tab:blue"
     linewidth: 1.6
+    label: "Hyperfine Transition"
+    loc: right
 
-  - from: ground_F1
-    to: P12_F2
-    color: "tab:blue"
-    linewidth: 1.6
-
-  - from: ground_F2
-    to: P12_F1
+  - from: ground
+    to: P12
     color: "tab:orange"
     linewidth: 1.6
-
-  - from: ground_F2
-    to: P12_F2
-    color: "tab:orange"
-    linewidth: 1.6
+    label: "D1 Line"
+    loc: 'left'
 
   # D2 transitions: 5S_1/2 -> 5P_3/2
-  # - from: ground_F1
-  #   to: P32_F0
-  #   color: "tab:green"
-  #   linewidth: 1.6
-  #
-  # - from: ground_F1
-  #   to: P32_F1
-  #   color: "tab:green"
-  #   linewidth: 1.6
-  #
-  # - from: ground_F1
-  #   to: P32_F2
-  #   color: "tab:green"
-  #   linewidth: 1.6
-  #
-  # - from: ground_F2
-  #   to: P32_F1
-  #   color: "tab:red"
-  #   linewidth: 1.6
-  #
-  # - from: ground_F2
-  #   to: P32_F2
-  #   color: "tab:red"
-  #   linewidth: 1.6
-  #
-  # - from: ground_F2
-  #   to: P32_F3
-  #   color: "tab:red"
-  #   linewidth: 1.6
+  - from: ground
+    to: P32
+    color: "tab:orange"
+    linewidth: 1.6
+    loc: 'left'
+    label: "D2 Line"
